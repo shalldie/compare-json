@@ -7,12 +7,10 @@
                 <el-tab-pane label="JSON数据源">
                     <el-row class="code-wrap" :gutter="20">
                         <el-col :span="12">
-                            <el-input type="textarea" :autosize="{ minRows: 4}"
-                                placeholder="请输入旧的json" v-model="json1" />
+                            <el-input type="textarea" :autosize="{ minRows: 4}" placeholder="请输入旧的json" v-model="json1" />
                         </el-col>
                         <el-col :span="12">
-                            <el-input type="textarea" :autosize="{ minRows: 4}"
-                                placeholder="请输入新的json" v-model="json2" />
+                            <el-input type="textarea" :autosize="{ minRows: 4}" placeholder="请输入新的json" v-model="json2" />
                         </el-col>
                     </el-row>
                 </el-tab-pane>
@@ -20,6 +18,16 @@
                     <el-row class="code-wrap" :gutter="20">
                         <el-col :span="24">
                             <json-mirror :value="tuple" />
+                        </el-col>
+                    </el-row>
+                </el-tab-pane>
+                <el-tab-pane label="Python 转 JSON">
+                    <el-row class="code-wrap" :gutter="20">
+                        <el-col :span="12">
+                            <el-input type="textarea" autosize placeholder="请输入 python 对象的字符串格式数据" v-model="python.model" />
+                        </el-col>
+                        <el-col :span="12">
+                            <el-input type="textarea" autosize placeholder="这里显示JSON格式数据" v-model="python.json" />
                         </el-col>
                     </el-row>
                 </el-tab-pane>
@@ -74,8 +82,15 @@ export default {
     },
     data() {
         return {
+            // json compare
             json1: d1,
-            json2: d2
+            json2: d2,
+
+            // python to json
+            python: {
+                model: '',
+                json: ''
+            }
         }
     },
     computed: {
@@ -158,6 +173,38 @@ export default {
                 return arr;
             }
             return obj;
+        }
+    },
+    watch: {
+        'python.model': function (model) {
+
+            function invokeParser(content) {
+                const reg = /\w+\(([^\(\)]+)\)/g;
+                content = content.replace(reg, '{$1}');
+                return content;
+            }
+
+            function parsePythonToJson(content) {
+
+                content = content
+                    .trim()
+                    // .replace(/^\(|\)$/g, '')
+                    .replace(/None/g, 'null')
+                    .replace(/False/g, 'false')
+                    .replace(/True/g, 'true')
+                    .replace(/u'/g, `'`)
+                    .replace(/=/g, ':');
+
+                const reg = /\w+\(([^\(\)]+)\)/;
+                while (reg.test(content)) {
+                    content = invokeParser(content);
+                }
+
+                var obj = eval('(' + content + ')');
+                return JSON.stringify(obj, null, '    ');
+            }
+
+            this.python.json = parsePythonToJson(model);
         }
     }
 }
