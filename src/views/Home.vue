@@ -40,6 +40,7 @@
 <script>
 import JsonMirror from '../components/JsonMirror';
 import * as _ from '../common/utils';
+import parsePythonToJson, { defPythonContent } from '../common/parsePythonToJSON';
 
 const d1 = `{
     "age": 12,
@@ -88,7 +89,7 @@ export default {
 
             // python to json
             python: {
-                model: '',
+                model: defPythonContent,
                 json: ''
             }
         }
@@ -176,35 +177,11 @@ export default {
         }
     },
     watch: {
-        'python.model': function (model) {
-
-            function invokeParser(content) {
-                const reg = /\w+\(([^\(\)]+)\)/g;
-                content = content.replace(reg, '{$1}');
-                return content;
+        'python.model': {
+            immediate: true,
+            handler(model) {
+                this.python.json = parsePythonToJson(model);
             }
-
-            function parsePythonToJson(content) {
-
-                content = content
-                    .trim()
-                    // .replace(/^\(|\)$/g, '')
-                    .replace(/None/g, 'null')
-                    .replace(/False/g, 'false')
-                    .replace(/True/g, 'true')
-                    .replace(/u'/g, `'`)
-                    .replace(/=/g, ':');
-
-                const reg = /\w+\(([^\(\)]+)\)/;
-                while (reg.test(content)) {
-                    content = invokeParser(content);
-                }
-
-                var obj = eval('(' + content + ')');
-                return JSON.stringify(obj, null, '    ');
-            }
-
-            this.python.json = parsePythonToJson(model);
         }
     }
 }
