@@ -1,11 +1,34 @@
+// 用来存字符串的字典
+const strMap = {};
+
+function getRND() {
+    return Math.random().toString(16);
+}
+
+function cacheStr(content = '') {
+    // 1. 预处理莫名其妙的换行
+    content = content.replace(/\n/g, '');
+
+    // 2. 用key替换string
+    content = content.replace(/'([^']*)'/g, (g0, g1) => {
+        const key = getRND();
+        strMap[key] = g1;
+        return `'${key}'`;
+    });
+
+    return content;
+}
+
 function invokeParser(content) {
     const reg = /\w+\((.+?)\)($|]|,)/g;
     content = content.replace(reg, '{$1}$2');
     return content;
 }
 
-export default function parsePythonToJson(content) {
+export default function parsePythonToJson(content = '') {
     try {
+
+        content = cacheStr(content);
 
         content = content
             .trim()
@@ -19,6 +42,10 @@ export default function parsePythonToJson(content) {
         const reg = /\w+\((.+?)\)($|]|,)/;
         while (reg.test(content)) {
             content = invokeParser(content);
+        }
+
+        for (let key in strMap) {
+            content = content.replace(key, strMap[key]);
         }
 
         var obj = eval('(' + content + ')');
